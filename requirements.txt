@@ -1,0 +1,14 @@
+# === Core Dependencies ===
+alpaca-trade-api==1.6.0       # Alpaca trading API client
+python-dotenv==1.0.1          # Load environment variables from .env
+PyYAML==6.0.1                 # YAML config file parsing
+numpy 
+pandas 
+
+
+# === CLI & ASCII Art (optional but nice) ===
+pyfiglet==1.0.2               # Fancy ASCII banner on startup
+
+# === Optional (for future enhancements) ===
+colorama==0.4.6               # Cross-platform terminal colors (for better CLI UX)
+
