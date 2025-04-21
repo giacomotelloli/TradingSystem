@@ -1,22 +1,32 @@
 from pyfiglet import Figlet
-from strategy_manager import StrategyManager
-from state import PortfolioState
-from utils.stock_state_manager import StockStateManager
+from trading_system.strategy_manager import StrategyManager
+from trading_system.state import PortfolioState
+from trading_system.utils.portfolio_manager import PortfolioManager  #  New import
+
 def main():
-    f = Figlet(font='small slant')  # You can also try 'big', 'banner', 'doom', etc.
+    f = Figlet(font='small slant')
     print(f.renderText('Trading System v0.0'))
 
+    # === Shared State ===
     state = PortfolioState()
     manager = StrategyManager(state)
-    stock_state = StockStateManager()
+    portfolio = PortfolioManager()  #  New: loads portfolio config and trader
+
+    # === Bootstrap from broker state ===
+    portfolio.bootstrap()
 
     while True:
-        cmd = input("Command (start/status/pnl/close <strategy>/exit): ").strip().lower()
+        cmd = input("Command (start/status/pnl/buy [stock]/close [stock]/exit): ").strip().lower()
 
         if cmd == "start":
             manager.start_all()
+
+        elif cmd.startswith("buy "):
+            stock = cmd.split(" ", 1)[1].strip()
+            portfolio.buy_stock(stock)
+
         elif cmd == "status":
-            holdings = stock_state.get_all_states()
+            holdings = portfolio.stock_state.get_all_states()
             print("\n Current Holdings:")
             for stock, data in holdings.items():
                 qty = data.get("quantity", 0)
@@ -30,16 +40,20 @@ def main():
                 print(f"    Avg Buy Price    : ${avg_price:.2f}")
                 print(f"    Realized PnL     : ${realized:.2f}")
             print()
+
         elif cmd == "pnl":
-            print("PnL:", state.get_pnl())
+            print(" Strategy PnL:", state.get_pnl())
+
         elif cmd.startswith("close "):
-            strategy_name = cmd.split(" ", 1)[1]
-            manager.send_command(strategy_name, "close_position")
+            stock = cmd.split(" ", 1)[1].strip()
+            manager.send_command(stock, "close_position")
+
         elif cmd == "exit":
-            print("Exiting.")
+            print(" Exiting Trading System.")
             break
+
         else:
-            print("Unknown command.")
+            print("Unknown command. Try: start, status, buy [stock], close [stock], pnl, exit.")
 
 if __name__ == "__main__":
     main()
