@@ -47,3 +47,24 @@ class PortfolioManager:
         self.stock_state.update_on_buy(stock, qty, total_cost)
 
         print(f"[Portfolio] Bought {qty} shares of {stock.upper()} at ${price:.2f} each. Total: ${total_cost:.2f}")
+
+
+    def sell_stock(self, stock, qty):
+        stock = stock.lower()
+        current_state = self.stock_state.get_state(stock)
+        current_qty = current_state.get("quantity", 0)
+
+        if qty > current_qty:
+            print(f"[Portfolio] Cannot sell {qty} shares of {stock.upper()}. You only own {current_qty}.")
+            return
+
+        price = self.trader.get_last_price(stock)
+        if not price:
+            print(f"[Portfolio] Failed to fetch price for {stock.upper()}")
+            return
+
+        total_return = qty * price
+        self.trader.sell(stock, qty)
+        self.stock_state.update_on_sell(stock, qty, total_return)
+
+        print(f"[Portfolio] Sold {qty} shares of {stock.upper()} at ${price:.2f} each. Total: ${total_return:.2f}")

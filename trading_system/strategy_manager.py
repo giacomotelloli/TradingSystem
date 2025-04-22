@@ -3,6 +3,7 @@ from state import PortfolioState
 import importlib
 import queue
 import threading 
+import yaml 
 
 class StrategyManager:
     def __init__(self, state: PortfolioState):
@@ -46,3 +47,30 @@ class StrategyManager:
             self.command_queues[stock].put(command)
         else:
             print(f"[Manager] No active strategy thread for stock '{stock}'")
+
+
+    def update_strategy(self, stock: str, new_strategy_module: str):
+        stock = stock.lower()
+
+        if stock in self.command_queues:
+            print(f"[Manager] Stopping current strategy for {stock.upper()}...")
+            self.send_command(stock, "close_position")
+
+            thread = self.threads[stock]
+            thread.join(timeout=10)
+
+        print(f"[Manager] Updating strategy for {stock.upper()} to {new_strategy_module}")
+        self.stock_to_strategy[stock] = new_strategy_module
+
+        self.persist_strategy_mapping()  #  persist to YAML
+
+        self.start_strategy(stock)
+
+
+    def persist_strategy_mapping(self, config_path="config/strategies.yaml"):
+        try:
+            with open(config_path, "w") as f:
+                yaml.dump({"strategies": self.stock_to_strategy}, f, sort_keys=False)
+            print("[Manager] Strategy mapping persisted to strategies.yaml")
+        except Exception as e:
+            print(f"[Manager] Failed to write strategies.yaml: {e}")

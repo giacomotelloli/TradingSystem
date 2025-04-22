@@ -48,6 +48,29 @@ def main():
             stock = cmd.split(" ", 1)[1].strip()
             manager.send_command(stock, "close_position")
 
+        elif cmd.startswith("sell "):
+            parts = cmd.split(" ")
+            if len(parts) != 3:
+                print("Usage: sell <stock> <quantity>")
+            else:
+                stock = parts[1]
+                try:
+                    qty = int(parts[2])
+                    if qty <= 0:
+                        raise ValueError()
+                    portfolio.sell_stock(stock, qty)
+                except ValueError:
+                    print("Quantity must be a positive integer.")
+
+        elif cmd.startswith("update_strategy "):
+            parts = cmd.split()
+            if len(parts) != 3:
+                print("Usage: update_strategy <stock> <new_strategy_module>")
+            else:
+                stock = parts[1]
+                new_strategy = parts[2]
+                manager.update_strategy(stock, new_strategy)
+
         elif cmd == "exit":
             print(" Exiting Trading System.")
             break
