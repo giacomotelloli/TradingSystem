@@ -1,4 +1,2 @@
 strategies:
-  aapl: strategy_a
-  msft: strategy_b
-  tsla: strategy_c
+  aapl: rsi_strategy
