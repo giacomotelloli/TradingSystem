@@ -4,7 +4,7 @@ from trading_system.state import PortfolioState
 from trading_system.utils.portfolio_manager import PortfolioManager  #  New import
 
 def main():
-    f = Figlet(font='slant')
+    f = Figlet(font='slant',width=100)
     print(f.renderText('Trading System 1.0'))
 
     # === Shared State ===

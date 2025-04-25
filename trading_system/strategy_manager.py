@@ -2,9 +2,9 @@ import yaml
 import threading
 import queue
 import importlib
-from utils.interface_factory import get_trading_interface
-from utils.stock_state_manager import StockStateManager
-from strategies.strategy_runner import StrategyRunner
+from .utils.interface_factory import get_trading_interface
+from .utils.stock_state_manager import StockStateManager
+from .strategies.strategy_runner import StrategyRunner
 
 class StrategyManager:
     def __init__(self, state, config_path="config/strategies.yaml"):
@@ -14,7 +14,7 @@ class StrategyManager:
         self.command_queues = {}
         self.threads = {}
         self.trader = get_trading_interface()
-        self.stock_state = StockStateManager(self.trader)
+        self.stock_state = StockStateManager()
 
     def _load_strategies(self, path):
         with open(path, 'r') as f:

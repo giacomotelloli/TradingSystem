@@ -1,5 +1,5 @@
 import time
-from utils.market_data_stream import MarketDataStream
+from trading_system.utils.market_data_stream import MarketDataStream
 
 class StrategyRunner:
     def __init__(self, stock, strategy_cls, trader, stock_state, command_queue, state, frequency=2.0):
@@ -19,7 +19,8 @@ class StrategyRunner:
         )
 
     def run(self):
-        print(f"[{self.stock.upper().replace("_", "/")}] StrategyRunner starting...")
+        stock_name = self.stock.upper().replace("_", "/")
+        print(f"[{stock_name}] StrategyRunner starting...")
         self.running = True
         self.data_stream.start()
         self.state.update_status(self.stock, "running")
@@ -28,7 +29,7 @@ class StrategyRunner:
             if not self.command_queue.empty():
                 cmd = self.command_queue.get()
                 if cmd == "close_position":
-                    print(f"[{self.stock.upper()}] Closing strategy runner...")
+                    print(f"[{stock_name}] Closing strategy runner...")
                     self.running = False
                     break
             time.sleep(0.5)
