@@ -1,7 +1,7 @@
-from strategies.base import StrategyBase
+from .base import StrategyBase
 import numpy as np
 
-class RSIStrategy(StrategyBase):
+class Strategy(StrategyBase):
     def __init__(self, stock, window=14):
         super().__init__(stock)
         self.prices = []

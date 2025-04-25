@@ -1,10 +1,11 @@
 # === Core Dependencies ===
 alpaca-trade-api      # Alpaca trading API client
+alpaca-py             # REST API for data
 python-dotenv==1.0.1          # Load environment variables from .env
 PyYAML==6.0.1                 # YAML config file parsing
 numpy 
 pandas 
-
+utils
 
 # === CLI & ASCII Art (optional but nice) ===
 pyfiglet==1.0.2               # Fancy ASCII banner on startup

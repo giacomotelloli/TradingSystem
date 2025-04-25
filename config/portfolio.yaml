@@ -1,6 +1,4 @@
-initial_budget: 250
+initial_budget: 500
 
 allocations:
-  aapl: 0.4
-  msft: 0.3
-  tsla: 0.3
+  btc_usd: 0.4

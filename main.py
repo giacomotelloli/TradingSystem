@@ -4,8 +4,8 @@ from trading_system.state import PortfolioState
 from trading_system.utils.portfolio_manager import PortfolioManager  #  New import
 
 def main():
-    f = Figlet(font='small slant')
-    print(f.renderText('Trading System v0.0'))
+    f = Figlet(font='slant')
+    print(f.renderText('Trading System 1.0'))
 
     # === Shared State ===
     state = PortfolioState()
@@ -27,19 +27,35 @@ def main():
 
         elif cmd == "status":
             holdings = portfolio.stock_state.get_all_states()
-            print("\n Current Holdings:")
+            account = portfolio.trader.get_account()
+            cash = float(account.cash) if account else 0.0
+
+            print("\n Portfolio Status:")
+            print(f"Available Cash: ${cash:,.2f}\n")
+            
+            market_value = 0.0
+            
             for stock, data in holdings.items():
                 qty = data.get("quantity", 0)
                 invested = data.get("money_invested", 0.0)
                 realized = data.get("realized_pnl", 0.0)
                 avg_price = (invested / qty) if qty else 0.0
 
-                print(f"- {stock.upper()}:")
-                print(f"    Quantity Owned   : {qty}")
-                print(f"    Money Invested   : ${invested:.2f}")
-                print(f"    Avg Buy Price    : ${avg_price:.2f}")
-                print(f"    Realized PnL     : ${realized:.2f}")
-            print()
+                current_price = portfolio.trader.get_last_price(stock)
+                stock_value = qty * current_price if current_price else 0.0
+                market_value += stock_value
+
+                print(f"\n- {stock.upper()}:")
+                print(f"    Quantity Owned     : {qty}")
+                print(f"    Avg Buy Price      : ${avg_price:.2f}")
+                print(f"    Current Price      : ${current_price:.2f}" if current_price else "    Current Price      : N/A")
+                print(f"    Market Value       : ${stock_value:.2f}")
+                print(f"    Money Invested     : ${invested:.2f}")
+                print(f"    Realized PnL       : ${realized:.2f}")
+
+            total_value = cash + market_value
+            print(f"\n Market Value of Holdings : ${market_value:,.2f}")
+            print(f" Total Portfolio Value     : ${total_value:,.2f}")
 
         elif cmd == "pnl":
             print(" Strategy PnL:", state.get_pnl())

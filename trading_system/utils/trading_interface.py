@@ -1,5 +1,5 @@
 from .base_interface import TradingInterface
-from utils.alpaca_client import get_alpaca_client
+from .alpaca_client import get_alpaca_client
 
 class AlpacaTradingInterface(TradingInterface):
     def __init__(self):

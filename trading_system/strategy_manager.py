@@ -1,76 +1,56 @@
-from utils.config_loader import load_strategy_config
-from state import PortfolioState
-import importlib
+import yaml
+import threading
 import queue
-import threading 
-import yaml 
+import importlib
+from utils.interface_factory import get_trading_interface
+from utils.stock_state_manager import StockStateManager
+from strategies.strategy_runner import StrategyRunner
 
 class StrategyManager:
-    def __init__(self, state: PortfolioState):
+    def __init__(self, state, config_path="config/strategies.yaml"):
         self.state = state
-        self.threads = {}
+        self.config_path = config_path
+        self.stock_to_strategy = self._load_strategies(config_path)
         self.command_queues = {}
-        self.stock_to_strategy = load_strategy_config()
+        self.threads = {}
+        self.trader = get_trading_interface()
+        self.stock_state = StockStateManager(self.trader)
+
+    def _load_strategies(self, path):
+        with open(path, 'r') as f:
+            config = yaml.safe_load(f)
+        return config.get('strategies', {})
+
+    def start_all(self):
+        for stock, strategy_module in self.stock_to_strategy.items():
+            self.start_strategy(stock)
 
     def start_strategy(self, stock):
-        if stock not in self.stock_to_strategy:
-            print(f"[Manager] No strategy configured for stock '{stock}'")
-            return
+        stock = stock.lower().replace("/", "_")
+        strategy_module_name = self.stock_to_strategy.get(stock)
 
-        strategy_module = self.stock_to_strategy[stock]
         try:
-            module = importlib.import_module(f"strategies.{strategy_module}")
-            strategy_func = getattr(module, "strategy_main_loop")
-        except (ModuleNotFoundError, AttributeError) as e:
-            print(f"[Manager] Error loading strategy '{strategy_module}': {e}")
+            strategy_module = importlib.import_module(f"trading_system.strategies.{strategy_module_name}")
+            strategy_class = getattr(strategy_module, "Strategy")
+        except Exception as e:
+            print(f"[Manager] Failed to load strategy {strategy_module_name} for {stock}: {e}")
             return
 
         cmd_queue = queue.Queue()
-        self.command_queues[stock] = cmd_queue
 
-        def wrapper():
-            self.state.update_status(stock, "running")
-            pnl = strategy_func(stock, self.state, cmd_queue)
-            self.state.update_pnl(stock, pnl)
-            self.state.update_status(stock, "completed")
+        runner = StrategyRunner(
+            stock=stock,
+            strategy_cls=strategy_class,
+            trader=self.trader,
+            stock_state=self.stock_state,
+            command_queue=cmd_queue,
+            state=self.state
+        )
 
-        thread = threading.Thread(target=wrapper, name=stock)
-        self.threads[stock] = thread
+        thread = threading.Thread(target=runner.run, daemon=True)
         thread.start()
 
-    def start_all(self):
-        for stock in self.stock_to_strategy:
-            self.start_strategy(stock)
+        self.command_queues[stock] = cmd_queue
+        self.threads[stock] = thread
 
-    def send_command(self, stock, command):
-        if stock in self.command_queues:
-            self.command_queues[stock].put(command)
-        else:
-            print(f"[Manager] No active strategy thread for stock '{stock}'")
-
-
-    def update_strategy(self, stock: str, new_strategy_module: str):
-        stock = stock.lower()
-
-        if stock in self.command_queues:
-            print(f"[Manager] Stopping current strategy for {stock.upper()}...")
-            self.send_command(stock, "close_position")
-
-            thread = self.threads[stock]
-            thread.join(timeout=10)
-
-        print(f"[Manager] Updating strategy for {stock.upper()} to {new_strategy_module}")
-        self.stock_to_strategy[stock] = new_strategy_module
-
-        self.persist_strategy_mapping()  #  persist to YAML
-
-        self.start_strategy(stock)
-
-
-    def persist_strategy_mapping(self, config_path="config/strategies.yaml"):
-        try:
-            with open(config_path, "w") as f:
-                yaml.dump({"strategies": self.stock_to_strategy}, f, sort_keys=False)
-            print("[Manager] Strategy mapping persisted to strategies.yaml")
-        except Exception as e:
-            print(f"[Manager] Failed to write strategies.yaml: {e}")
+        print(f"[Manager] Started strategy thread for {stock.upper()}")

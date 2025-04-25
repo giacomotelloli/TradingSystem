@@ -1,11 +1,11 @@
 import yaml
-from utils.stock_state_manager import StockStateManager
-from utils.interface_factory import get_trading_interface
+from .stock_state_manager import StockStateManager
+from .interface_factory import get_trading_interface
 
 class PortfolioManager:
     def __init__(self, config_path="config/portfolio.yaml"):
         self.trader = get_trading_interface()
-        self.stock_state = StockStateManager(self.trader)
+        self.stock_state = StockStateManager()
         self._load_config(config_path)
 
     def _load_config(self, path):
@@ -19,12 +19,12 @@ class PortfolioManager:
         for stock in self.allocations:
             state = self.stock_state.get_state(stock)
             if state["quantity"] > 0:
-                print(f"  [✓] {stock.upper()} already has {state['quantity']} shares.")
+                print(f"  [✓] {stock.upper().replace("_", "/")} already has {state['quantity']} shares.")
             else:
-                print(f"  [ ] {stock.upper()} has no position.")
+                print(f"  [ ] {stock.upper().replace("_", "/")} has no position.")
 
     def buy_stock(self, stock):
-        stock = stock.lower()
+        stock = stock.lower().replace("/", "_")
         if stock not in self.allocations:
             print(f"[Portfolio] {stock} not found in allocation config.")
             return
@@ -34,37 +34,37 @@ class PortfolioManager:
         price = self.trader.get_last_price(stock)
 
         if not price:
-            print(f"[Portfolio] Failed to fetch price for {stock.upper()}")
+            print(f"[Portfolio] Failed to fetch price for {stock.upper().replace("_", "/")}")
             return
 
         qty = int(budget // price)
         if qty == 0:
-            print(f"[Portfolio] Not enough budget to buy any shares of {stock.upper()}")
+            print(f"[Portfolio] Not enough budget to buy any shares of {stock.upper().replace("_", "/")}")
             return
 
         total_cost = qty * price
         self.trader.buy(stock, qty)
         self.stock_state.update_on_buy(stock, qty, total_cost)
 
-        print(f"[Portfolio] Bought {qty} shares of {stock.upper()} at ${price:.2f} each. Total: ${total_cost:.2f}")
+        print(f"[Portfolio] Bought {qty} shares of {stock.upper().replace("_", "/")} at ${price:.2f} each. Total: ${total_cost:.2f}")
 
 
     def sell_stock(self, stock, qty):
-        stock = stock.lower()
+        stock = stock.lower().replace("/", "_")
         current_state = self.stock_state.get_state(stock)
         current_qty = current_state.get("quantity", 0)
 
         if qty > current_qty:
-            print(f"[Portfolio] Cannot sell {qty} shares of {stock.upper()}. You only own {current_qty}.")
+            print(f"[Portfolio] Cannot sell {qty} shares of {stock.upper().replace("_", "/")}. You only own {current_qty}.")
             return
 
         price = self.trader.get_last_price(stock)
         if not price:
-            print(f"[Portfolio] Failed to fetch price for {stock.upper()}")
+            print(f"[Portfolio] Failed to fetch price for {stock.upper().replace("_", "/")}")
             return
 
         total_return = qty * price
         self.trader.sell(stock, qty)
         self.stock_state.update_on_sell(stock, qty, total_return)
 
-        print(f"[Portfolio] Sold {qty} shares of {stock.upper()} at ${price:.2f} each. Total: ${total_return:.2f}")
+        print(f"[Portfolio] Sold {qty} shares of {stock.upper().replace("_", "/")} at ${price:.2f} each. Total: ${total_return:.2f}")

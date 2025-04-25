@@ -1,2 +1,2 @@
 strategies:
-  aapl: rsi_strategy
+  btc_usd: rsi_strategy

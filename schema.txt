@@ -1,0 +1,62 @@
+**************************************************************************
+USE CASE:
+User runs main.py
+│
+├── .env is loaded (secure API config)
+│
+├── PortfolioManager is initialized
+│   └── Reads portfolio.yaml (allocations, budget)
+│   └── Initializes TradingInterface (Alpaca)
+│   └── Initializes StockStateManager (loads from YAML or broker)
+│
+├── StrategyManager is initialized
+│   └── Loads strategies.yaml
+│   └── Prepares command queues per stock
+**************************************************************************
+USE CASE:
+User enters commands:
+│
+├── start              → Starts strategy threads for all stocks
+├── buy <stock>        → Uses allocation to buy stock (PortfolioManager)
+├── sell <stock> <qty> → Sells quantity and updates state
+├── close <stock>      → Sends "close_position" to strategy thread
+├── update_strategy    → Stops thread, updates strategy, restarts
+├── status             → Prints holdings from StockStateManager
+├── pnl                → Prints live unrealized PnL from PortfolioState
+├── exit               → Gracefully shuts down system
+**************************************************************************
+
+StrategyRunner starts
+│
+├── Initializes:
+│   └── RSIStrategy or other StrategyBase subclass
+│   └── MarketDataStream (polls broker at given frequency)
+│
+├── Receives price tick from MarketDataStream
+│
+├── Calls strategy.on_data(data)
+│   └── Returns signal: {action: buy/sell/hold, confidence}
+│
+├── If signal = buy/sell:
+│   └── Uses TradingInterface to place order
+│   └── Updates StockStateManager (YAML state + realized PnL)
+**************************************************************************
+
+DATA FLOW :
+[ main.py ]
+   │
+   ├──> PortfolioManager
+   │       └──> StockStateManager  <─────┐
+   │       └──> TradingInterface         │
+   │                                     │
+   ├──> StrategyManager                  │
+   │       └──> strategy_main_loop (thread)
+   │               └──> MarketDataStream (polls broker)
+   │               └──> StrategyBase (e.g. RSI)
+   │               └──> on_data() → signal → order
+   │               └──> Uses TradingInterface to trade
+   │               └──> Updates StockStateManager
+   │
+   └──> User CLI Interface
+           ├──> buy / sell / start / close / status / update_strategy
+           └──> Interacts with PM, SM, and manager classes
