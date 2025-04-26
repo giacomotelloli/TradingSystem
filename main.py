@@ -2,10 +2,52 @@ from pyfiglet import Figlet
 from trading_system.strategy_manager import StrategyManager
 from trading_system.state import PortfolioState
 from trading_system.utils.portfolio_manager import PortfolioManager  #  New import
+import os 
+
+def show_help():
+    print("""
+    Available Commands:
+
+start
+    ➔ Start all strategy threads based on strategies.yaml
+
+buy <stock>
+    ➔ Manually buy a stock (e.g., buy btc_usd)
+
+sell <stock> <quantity>
+    ➔ Manually sell a quantity of a stock (e.g., sell btc_usd 2)
+
+close <stock>
+    ➔ Close a running strategy thread (e.g., close btc_usd)
+
+status
+    ➔ Show current holdings, cash available, and portfolio value
+
+pnl
+    ➔ Show the realized PnL (profit and loss)
+
+threads
+    ➔ Show running strategy threads and the associated strategy
+
+update_strategy <stock> <new_strategy_module>
+    ➔ Change the strategy used for a stock at runtime (e.g., update_strategy btc_usd mean_reversion)
+
+help
+    ➔ Show this help message
+
+clear
+    ➔ Clear the screen 
+          
+exit
+    ➔ Exit the trading system safely
+""")
+
+def print_banner():
+    f = Figlet(font='slant', width=100)
+    print(f.renderText('Trading System 1.0'))
 
 def main():
-    f = Figlet(font='slant',width=100)
-    print(f.renderText('Trading System 1.0'))
+    print_banner()
 
     # === Shared State ===
     state = PortfolioState()
@@ -16,7 +58,7 @@ def main():
     portfolio.bootstrap()
 
     while True:
-        cmd = input("Command (start/status/pnl/buy [stock]/close [stock]/exit): ").strip().lower()
+        cmd = input("Command (help for more): ").strip().lower()
 
         if cmd == "start":
             manager.start_all()
@@ -86,6 +128,16 @@ def main():
                 stock = parts[1]
                 new_strategy = parts[2]
                 manager.update_strategy(stock, new_strategy)
+
+        elif cmd == "help":
+            show_help()
+
+        elif cmd == "threads":
+            manager.show_running_threads()
+        
+        elif cmd == "clear":
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print_banner()
 
         elif cmd == "exit":
             print(" Exiting Trading System.")

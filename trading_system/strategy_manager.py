@@ -54,3 +54,15 @@ class StrategyManager:
         self.threads[stock] = thread
 
         print(f"[Manager] Started strategy thread for {stock.upper()}")
+
+
+    def show_running_threads(self):
+        print("\n Active Strategy Threads:")
+
+        for stock, thread in self.threads.items():
+            strategy_module = self.stock_to_strategy.get(stock, "Unknown")
+            is_alive = "Yes" if thread.is_alive() else "No"
+            real_stock = stock.upper().replace("_", "/")
+
+            print(f"- {real_stock}: Strategy = {strategy_module}, Running = {is_alive}")
+        print()
