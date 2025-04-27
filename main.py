@@ -35,7 +35,7 @@ update_strategy <stock> <new_strategy_module>
 help
     ➔ Show this help message
 
-clear
+clear 
     ➔ Clear the screen 
           
 exit

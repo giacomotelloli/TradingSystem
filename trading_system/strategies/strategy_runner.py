@@ -39,6 +39,10 @@ class StrategyRunner:
         print(f"[{self.stock.upper()}] StrategyRunner stopped.")
 
     def on_data(self, data):
+        """
+            Receives data from the MarketDataStream 
+            and passes it to the strategy and make actions 
+        """
         if not self.running:
             return
 
