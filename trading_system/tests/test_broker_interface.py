@@ -21,7 +21,7 @@ def test_trading_interface():
     price = trader.get_last_price(symbol)
     print(f"Last price of {symbol}: ${price}")
 
-    # ⚠️ Optionally, test small buy/sell (careful if live money!!)
+    #  Optionally, test small buy/sell (careful if live money!!)
     # qty = 0.0001
     # trader.buy(symbol, qty)
     # print(f"Placed small BUY order for {qty} {symbol}")
