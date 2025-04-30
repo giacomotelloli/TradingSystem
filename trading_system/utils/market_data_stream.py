@@ -19,7 +19,7 @@ class MarketDataStream:
     def _stream_loop(self):
         while self.running:
             try:
-                price = self.trading_interface.get_last_price(self.stock)
+                price = self.trading_interface.get_last_price(self.stock.upper().replace("_", "/"))
                 if price:
                     data = {
                         "symbol": self.stock,

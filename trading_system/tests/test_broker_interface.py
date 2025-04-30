@@ -1,8 +1,11 @@
 import sys
+
 import os
 
 # Add parent directory (trading_system/) to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+from dotenv import load_dotenv
+load_dotenv(override=True)  # Loads the .env file
 
 from trading_system.utils.interface_factory import get_trading_interface
 

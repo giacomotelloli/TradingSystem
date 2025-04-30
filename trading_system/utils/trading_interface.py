@@ -15,11 +15,11 @@ class AlpacaTradingInterface:
             if "/" in symbol:  # Crypto symbol e.g. BTC/USD
                 request = CryptoLatestTradeRequest(symbol_or_symbols=[symbol.upper()])
                 response = self.crypto_data_client.get_crypto_latest_trade(request)
-                return float(response.data[symbol.upper()].price)
+                return float(response[symbol.upper()].price)
             else:  # Stock symbol e.g. AAPL
                 request = StockLatestTradeRequest(symbol_or_symbols=[symbol.upper()])
                 response = self.stock_data_client.get_stock_latest_trade(request)
-                return float(response.data[symbol.upper()].price)
+                return float(response[symbol.upper()].price)
         except Exception as e:
             print(f"[Alpaca] Error fetching last price for {symbol}: {e}")
             return None
@@ -50,21 +50,6 @@ class AlpacaTradingInterface:
         except Exception:
             return None
 
-    def get_last_price(self, symbol: str):
-        try:
-            if "/" in symbol:
-                # Crypto market
-                request = LatestTradeRequest(symbol_or_symbols=[symbol.upper()])
-                response = self.crypto_data_client.get_latest_trade(request)
-                return float(response.data[symbol.upper()].price)
-            else:
-                # Stock market
-                request = LatestTradeRequest(symbol_or_symbols=[symbol.upper()])
-                response = self.stock_data_client.get_latest_trade(request)
-                return float(response.data[symbol.upper()].price)
-        except Exception as e:
-            print(f"[Alpaca] Error fetching last price for {symbol}: {e}")
-            return None
-
     def get_account(self):
         return self.trading_client.get_account()
+    
