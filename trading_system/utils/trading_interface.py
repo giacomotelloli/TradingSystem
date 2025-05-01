@@ -2,7 +2,8 @@ from .base_interface import TradingInterface
 from alpaca.data.requests import CryptoLatestTradeRequest
 from alpaca.data.requests import StockLatestTradeRequest
 from .alpaca_client import get_trading_client, get_crypto_data_client, get_stock_data_client
-from alpaca.data.historical import CryptoHistoricalDataClient, StockHistoricalDataClient
+from alpaca.trading.enums import OrderSide, TimeInForce
+from alpaca.trading.requests import MarketOrderRequest
 
 class AlpacaTradingInterface:
     def __init__(self):
@@ -25,23 +26,33 @@ class AlpacaTradingInterface:
             return None
 
     def buy(self, symbol: str, qty: float):
+        
         print(f"[Alpaca] Buying {qty} {symbol}")
-        return self.trading_client.submit_order(
-            symbol=symbol.upper(),
+        formatted_symbol = symbol.upper().replace("_","/")
+        order_request = MarketOrderRequest(
+            symbol=formatted_symbol,
             qty=qty,
-            side='buy',
-            type='market',
-            time_in_force='gtc'
+            side=OrderSide.BUY,
+            type="market",
+            time_in_force=TimeInForce.GTC
+        )
+        return self.trading_client.submit_order(
+            order_data=order_request
         )
 
     def sell(self, symbol: str, qty: float):
+
         print(f"[Alpaca] Selling {qty} {symbol}")
-        return self.trading_client.submit_order(
-            symbol=symbol.upper(),
+        formatted_symbol = symbol.upper().replace("_","/")
+        order_request = MarketOrderRequest(
+            symbol=formatted_symbol,
             qty=qty,
-            side='sell',
-            type='market',
-            time_in_force='gtc'
+            side=OrderSide.SELL,
+            type="market",
+            time_in_force=TimeInForce.GTC
+        )
+        return self.trading_client.submit_order(
+            order_data=order_request
         )
 
     def get_position(self, symbol: str):

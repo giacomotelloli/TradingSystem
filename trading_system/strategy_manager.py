@@ -44,7 +44,8 @@ class StrategyManager:
             trader=self.trader,
             stock_state=self.stock_state,
             command_queue=cmd_queue,
-            state=self.state
+            state=self.state,
+            frequency=10
         )
 
         thread = threading.Thread(target=runner.run, daemon=True)

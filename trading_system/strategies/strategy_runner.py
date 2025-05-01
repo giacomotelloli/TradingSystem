@@ -49,8 +49,10 @@ class StrategyRunner:
         signal = self.strategy.on_data(data)
 
         if signal["action"] == "buy":
+
             price = data["price"]
-            qty = 1  # basic example
+            qty = signal["quantity"] 
+            
             real_symbol = self.stock.upper().replace("_", "/")
             self.trader.buy(real_symbol, qty)
             self.stock_state.update_on_buy(self.stock, qty, price * qty)

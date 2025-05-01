@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from alpaca.trading.client import TradingClient
 from alpaca.data.historical import CryptoHistoricalDataClient, StockHistoricalDataClient
 
-load_dotenv()
+load_dotenv(override=True)
 
 def get_trading_client():
     env = os.getenv("ENVIRONMENT", "paper").lower()
