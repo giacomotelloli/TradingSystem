@@ -2,13 +2,13 @@ import time
 from trading_system.utils.market_data_stream import MarketDataStream
 
 class StrategyRunner:
-    def __init__(self, stock, strategy_cls, trader, stock_state, command_queue, state, frequency=2.0):
+    def __init__(self, stock, strategy_cls,strategy_initial_capital, trader, stock_state, command_queue, state, frequency=2.0):
         self.stock = stock
         self.trader = trader
         self.stock_state = stock_state
         self.command_queue = command_queue
         self.state = state
-        self.strategy = strategy_cls(stock)
+        self.strategy = strategy_cls(stock,strategy_initial_capital)
         self.running = False
 
         self.data_stream = MarketDataStream(
@@ -52,7 +52,7 @@ class StrategyRunner:
 
             price = data["price"]
             qty = signal["quantity"] 
-            
+
             real_symbol = self.stock.upper().replace("_", "/")
             self.trader.buy(real_symbol, qty)
             self.stock_state.update_on_buy(self.stock, qty, price * qty)

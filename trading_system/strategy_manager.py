@@ -5,6 +5,7 @@ import importlib
 from .utils.interface_factory import get_trading_interface
 from .utils.stock_state_manager import StockStateManager
 from .strategies.strategy_runner import StrategyRunner
+from trading_system.utils.portfolio_manager import PortfolioManager
 
 class StrategyManager:
     def __init__(self, state, config_path="config/strategies.yaml"):
@@ -21,14 +22,15 @@ class StrategyManager:
             config = yaml.safe_load(f)
         return config.get('strategies', {})
 
-    def start_all(self):
+    def start_all(self,portfolio:PortfolioManager):
         for stock, strategy_module in self.stock_to_strategy.items():
-            self.start_strategy(stock)
+            initial_stock_buget = portfolio.allocations[stock]*portfolio.initial_budget
+            self.start_strategy(stock,initial_stock_buget)
 
-    def start_strategy(self, stock):
+    def start_strategy(self, stock,initial_capital):
         stock = stock.lower().replace("/", "_")
         strategy_module_name = self.stock_to_strategy.get(stock)
-
+        
         try:
             strategy_module = importlib.import_module(f"trading_system.strategies.{strategy_module_name}")
             strategy_class = getattr(strategy_module, "Strategy")
@@ -41,11 +43,12 @@ class StrategyManager:
         runner = StrategyRunner(
             stock=stock,
             strategy_cls=strategy_class,
+            strategy_initial_capital=initial_capital,
             trader=self.trader,
             stock_state=self.stock_state,
             command_queue=cmd_queue,
             state=self.state,
-            frequency=10
+            frequency=3600
         )
 
         thread = threading.Thread(target=runner.run, daemon=True)

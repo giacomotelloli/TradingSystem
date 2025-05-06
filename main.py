@@ -44,7 +44,7 @@ exit
 
 def print_banner():
     f = Figlet(font='slant', width=100)
-    print(f.renderText('Trading System 1.0'))
+    print(f.renderText('Auto-Trading System 1.0'))
 
 def main():
     print_banner()
@@ -61,7 +61,7 @@ def main():
         cmd = input("Command (help for more): ").strip().lower()
 
         if cmd == "start":
-            manager.start_all()
+            manager.start_all(portfolio)
 
         elif cmd.startswith("buy "):
             stock = cmd.split(" ", 1)[1].strip()
