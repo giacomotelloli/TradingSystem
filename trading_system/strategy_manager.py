@@ -1,3 +1,4 @@
+# strategy_manager.py
 import yaml
 import threading
 import queue
@@ -11,26 +12,29 @@ class StrategyManager:
     def __init__(self, state, config_path="config/strategies.yaml"):
         self.state = state
         self.config_path = config_path
-        self.stock_to_strategy = self._load_strategies(config_path)
+        cfg = self._load_config(config_path)
+        self.stock_to_strategy = cfg.get('strategies', {})
+        self.timeframes = cfg.get('timeframes', {})  # <-- nuovo
         self.command_queues = {}
         self.threads = {}
         self.trader = get_trading_interface()
         self.stock_state = StockStateManager()
 
-    def _load_strategies(self, path):
+    def _load_config(self, path):
         with open(path, 'r') as f:
-            config = yaml.safe_load(f)
-        return config.get('strategies', {})
+            return yaml.safe_load(f) or {}
 
-    def start_all(self,portfolio:PortfolioManager):
+    def start_all(self, portfolio: PortfolioManager):
         for stock, strategy_module in self.stock_to_strategy.items():
-            initial_stock_buget = portfolio.allocations[stock]*portfolio.initial_budget
-            self.start_strategy(stock,initial_stock_buget)
+            initial_stock_buget = portfolio.allocations[stock] * portfolio.initial_budget
+            # timeframe in minuti (default 1)
+            tf_min = int(self.timeframes.get(stock, 1))
+            self.start_strategy(stock, initial_stock_buget, tf_min)
 
-    def start_strategy(self, stock,initial_capital):
+    def start_strategy(self, stock, initial_capital, timeframe_minutes=1):
         stock = stock.lower().replace("/", "_")
         strategy_module_name = self.stock_to_strategy.get(stock)
-        
+
         try:
             strategy_module = importlib.import_module(f"trading_system.strategies.{strategy_module_name}")
             strategy_class = getattr(strategy_module, "Strategy")
@@ -48,7 +52,7 @@ class StrategyManager:
             stock_state=self.stock_state,
             command_queue=cmd_queue,
             state=self.state,
-            frequency=3600
+            bar_timeframe_minutes=timeframe_minutes  # <-- nuovo
         )
 
         thread = threading.Thread(target=runner.run, daemon=True)
@@ -57,8 +61,7 @@ class StrategyManager:
         self.command_queues[stock] = cmd_queue
         self.threads[stock] = thread
 
-        print(f"[Manager] Started strategy thread for {stock.upper()}")
-
+        print(f"[Manager] Started strategy thread for {stock.upper()} (TF={timeframe_minutes}m)")
 
     def show_running_threads(self):
         print("\n Active Strategy Threads:")

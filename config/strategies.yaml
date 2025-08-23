@@ -1,2 +1,4 @@
 strategies:
   btc_usd: rsi_strategy
+timeframes:
+  btc_usd: 1   # minuti (default 1 se mancante)

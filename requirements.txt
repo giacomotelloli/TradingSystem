@@ -13,3 +13,4 @@ pyfiglet==1.0.2               # Fancy ASCII banner on startup
 # === Optional (for future enhancements) ===
 colorama==0.4.6               # Cross-platform terminal colors (for better CLI UX)
 
+matplotlib

@@ -4,12 +4,20 @@ from alpaca.data.requests import StockLatestTradeRequest
 from .alpaca_client import get_trading_client, get_crypto_data_client, get_stock_data_client
 from alpaca.trading.enums import OrderSide, TimeInForce
 from alpaca.trading.requests import MarketOrderRequest
+import os
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
+
 
 class AlpacaTradingInterface:
     def __init__(self):
         self.trading_client = get_trading_client()
         self.crypto_data_client = get_crypto_data_client()
         self.stock_data_client = get_stock_data_client()
+        self.api_key = os.getenv("PAPER_API_KEY_ID")
+        self.api_secret = os.getenv("PAPER_API_SECRET_KEY")
+
 
     def get_last_price(self, symbol: str):
         try:
