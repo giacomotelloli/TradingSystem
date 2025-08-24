@@ -27,14 +27,11 @@ class StrategyManager:
     def start_all(self, portfolio: PortfolioManager):
         for stock, strategy_module in self.stock_to_strategy.items():
             initial_stock_buget = portfolio.allocations[stock] * portfolio.initial_budget
-            # timeframe in minuti (default 1)
-            tf_min = int(self.timeframes.get(stock, 1))
-            self.start_strategy(stock, initial_stock_buget, tf_min)
+            self.start_strategy(stock, initial_stock_buget, portfolio)
 
-    def start_strategy(self, stock, initial_capital, timeframe_minutes=1):
+    def start_strategy(self, stock, initial_capital, portfolio: PortfolioManager):
         stock = stock.lower().replace("/", "_")
         strategy_module_name = self.stock_to_strategy.get(stock)
-
         try:
             strategy_module = importlib.import_module(f"trading_system.strategies.{strategy_module_name}")
             strategy_class = getattr(strategy_module, "Strategy")
@@ -52,7 +49,8 @@ class StrategyManager:
             stock_state=self.stock_state,
             command_queue=cmd_queue,
             state=self.state,
-            bar_timeframe_minutes=timeframe_minutes  # <-- nuovo
+            frequency=3600,
+            portfolio_manager=portfolio,   # <-- NUOVO
         )
 
         thread = threading.Thread(target=runner.run, daemon=True)

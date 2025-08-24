@@ -4,8 +4,8 @@ from trading_system.utils.bar_aggregator_stream import AggregatingBarStream
 
 class StrategyRunner:
     def __init__(self, stock, strategy_cls, strategy_initial_capital,
-                 trader, stock_state, command_queue, state,
-                 bar_timeframe_minutes: int = 1):
+                 trader, stock_state, command_queue, state, frequency=2.0,
+                 portfolio_manager=None):           # <-- NUOVO
         self.stock = stock
         self.trader = trader
         self.stock_state = stock_state
@@ -13,14 +13,13 @@ class StrategyRunner:
         self.state = state
         self.strategy = strategy_cls(stock, strategy_initial_capital)
         self.running = False
+        self.portfolio = portfolio_manager            # <-- NUOVO
 
-        # Stream: aggrega 1m -> N minuti e chiama on_bar_agg
-        self.data_stream = AggregatingBarStream(
-            symbol=stock,
-            timeframe_minutes=bar_timeframe_minutes,
-            on_bar_agg=self._on_bar_agg,
-            api_key=getattr(trader, "api_key", None) if hasattr(trader, "api_key") else None,
-            api_secret=getattr(trader, "api_secret", None) if hasattr(trader, "api_secret") else None,
+        self.data_stream = MarketDataStream(
+            stock=stock,
+            on_data_callback=self.on_data,
+            trading_interface=trader,
+            frequency=frequency
         )
 
     def run(self):
@@ -37,18 +36,47 @@ class StrategyRunner:
                     print(f"[{stock_name}] Closing strategy runner...")
                     self.running = False
                     break
-            time.sleep(0.2)
-
-        # flush eventuale ultima candela
-        try:
-            self.data_stream.flush()
-        except Exception:
-            pass
+            time.sleep(0.5)
 
         self.data_stream.stop()
         self.state.update_status(self.stock, "completed")
         print(f"[{self.stock.upper()}] StrategyRunner stopped.")
 
+    def on_data(self, data):
+        if not self.running:
+            return
+
+        signal = self.strategy.on_data(data)
+
+        if signal["action"] == "buy":
+            price = data["price"]
+            qty = signal["quantity"]
+
+            if self.portfolio:
+                self.portfolio.book_buy(self.stock, qty, price)
+            else:
+                # fallback vecchio
+                real_symbol = self.stock.upper().replace("_", "/")
+                self.trader.buy(real_symbol, qty)
+                self.stock_state.update_on_buy(self.stock, qty, price * qty)
+
+            print(f"[{self.stock.upper()}] Executed BUY at ${price:.2f}")
+
+        elif signal["action"] == "sell":
+            current = self.stock_state.get_state(self.stock)
+            qty = current.get("quantity", 0)
+            if qty > 0:
+                price = data["price"]
+
+                if self.portfolio:
+                    self.portfolio.book_sell(self.stock, qty, price)
+                else:
+                    real_symbol = self.stock.upper().replace("_", "/")
+                    self.trader.sell(real_symbol, qty)
+                    self.stock_state.update_on_sell(self.stock, qty, price * qty)
+
+                print(f"[{self.stock.upper()}] Executed SELL at ${price:.2f}")
+    
     # ===== nuovo handler: candela aggregata chiusa =====
     def _on_bar_agg(self, bar):
         """
@@ -90,32 +118,4 @@ class StrategyRunner:
                 self.stock_state.update_on_sell(self.stock, qty, price * qty)
                 print(f"[{self.stock.upper()}] Executed SELL at ${price:.2f}")
 
-    def on_data(self, data):
-        """
-            Receives data from the MarketDataStream 
-            and passes it to the strategy and make actions 
-        """
-        if not self.running:
-            return
-
-        signal = self.strategy.on_data(data)
-
-        if signal["action"] == "buy":
-
-            price = data["price"]
-            qty = signal["quantity"] 
-
-            real_symbol = self.stock.upper().replace("_", "/")
-            self.trader.buy(real_symbol, qty)
-            self.stock_state.update_on_buy(self.stock, qty, price * qty)
-            print(f"[{self.stock.upper()}] Executed BUY at ${price:.2f}")
-
-        elif signal["action"] == "sell":
-            current = self.stock_state.get_state(self.stock)
-            qty = current.get("quantity", 0)
-            if qty > 0:
-                price = data["price"]
-                real_symbol = self.stock.upper().replace("_", "/")
-                self.trader.sell(real_symbol, qty)
-                self.stock_state.update_on_sell(self.stock, qty, price * qty)
-                print(f"[{self.stock.upper()}] Executed SELL at ${price:.2f}")
+    

@@ -2,3 +2,10 @@ initial_budget: 500
 
 allocations:
   btc_usd: 0.4
+  eth_usd: 0.6  # esempi
+
+reinvest:
+  default: 1.0          # 100% dei profitti viene reinvestito (default)
+  per_asset:
+    btc_usd: 0.7        # BTC reinveste solo il 30% dei profitti; il resto va in PnL pool
+    eth_usd: 0.7

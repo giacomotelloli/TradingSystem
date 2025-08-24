@@ -40,6 +40,12 @@ help
 
 clear 
     ➔ Clear the screen 
+
+set_reinvest <stock> <ratio 0..1>
+    ➔ Imposta la quota di profitto da reinvestire per uno stock (es. set_reinvest btc_usd 0.4)
+
+weights
+    ➔ Mostra valorizzazione corrente del portafoglio, pesi attuali vs target e PnL poo
           
 exit
     ➔ Exit the trading system safely
@@ -106,49 +112,29 @@ def main():
             print(" Strategy PnL:", state.get_pnl())
 
         elif cmd == "backtest":
-            # chiedi parametri
-            start = input("Start date (es. 2024-01-01T00:00:00Z o 2024-01-01): ").strip()
-            end   = input("End date   (es. 2024-03-01T00:00:00Z o 2024-03-01): ").strip()
-            tf_s  = input("Timeframe minutes (es. 1 / 5 / 15 / 60): ").strip()
+            start = input("Start date ...: ").strip()
+            end   = input("End date ...  : ").strip()
+            tf_s  = input("Timeframe minutes ...: ").strip()
+            def _to_iso(x): return x if ("T" in x or " " in x) else x + "T00:00:00Z"
+            start_iso, end_iso = _to_iso(start), _to_iso(end)
+            try: timeframe_minutes = int(tf_s)
+            except: timeframe_minutes = 1
 
-            # normalizza ISO (se mettono solo data)
-            def _to_iso(x: str) -> str:
-                if "T" in x or " " in x:
-                    return x
-                return x + "T00:00:00Z"
+            # <<< QUI >>> broker disabilitato
+            portfolio = PortfolioManager(broker_enabled=False)
+            portfolio.bootstrap()
 
-            start_iso = _to_iso(start)
-            end_iso   = _to_iso(end)
-            try:
-                timeframe_minutes = int(tf_s)
-            except Exception:
-                print("Timeframe non valido, uso 1 minuto.")
-                timeframe_minutes = 1
+            manager = StrategyManager(PortfolioState())
+            strategies_map = manager.stock_to_strategy
 
-            # carica mappa strategie e allocazioni dal PortfolioManager (già lo usi per live)
-            portfolio = PortfolioManager()
-            portfolio.bootstrap()  # per avere allocations e initial_budget coerenti
-
-            # StrategyManager legge config/strategies.yaml per le strategie
-            manager = StrategyManager(PortfolioState())  # state temporaneo solo per caricare mapping
-            strategies_map = manager.stock_to_strategy   # es. {'btc_usd': 'rsi_strategy', ...}
-
-            # Backtester vuole i simboli esattamente come nel file YAML (chiave)
-            # e le allocation dal portfolio manager
             backtester = PortfolioBacktester(
+                portfolio=portfolio,
                 strategies_map=strategies_map,
-                allocations=portfolio.allocations,
-                initial_budget=portfolio.initial_budget,
                 timeframe_minutes=timeframe_minutes,
                 start_iso=start_iso,
                 end_iso=end_iso,
-                api_key=os.getenv("PAPER_API_KEY_ID") or os.getenv("APCA_API_KEY_ID"),
-                api_secret=os.getenv("PAPER_API_SECRET_KEY") or os.getenv("APCA_API_SECRET_KEY"),
             )
-
-            print("\n[Backtest] Starting ...")
-            backtester.run()
-            print("[Backtest] Completed.\n")
+            print("\n[Backtest] Starting ..."); backtester.run(); print("[Backtest] Completed.\n")
 
         elif cmd.startswith("close "):
             stock = cmd.split(" ", 1)[1].strip()
@@ -190,6 +176,43 @@ def main():
         elif cmd == "exit":
             print(" Exiting Trading System.")
             break
+        
+        elif cmd.startswith("set_reinvest "):
+            parts = cmd.split()
+            if len(parts) != 3:
+                print("Usage: set_reinvest <stock> <ratio 0..1>")
+            else:
+                stock, r = parts[1], parts[2]
+                try:
+                    ratio = float(r)
+                    portfolio.set_reinvest_ratio(stock, ratio)
+                    print(f"Reinvest ratio per {stock} impostato a {ratio:.2f}")
+                except ValueError:
+                    print("Ratio non valido. Usa un numero tra 0 e 1.")
+
+        elif cmd == "weights":
+            snap = portfolio.snapshot()
+            rows = snap["rows"]
+            tot = snap["totals"]
+            print("\n Portfolio Snapshot (valori in $):")
+            print(f"  Total Holdings : {tot['total_holdings']:.2f}")
+            print(f"  Cash Allocated : {tot['total_cash_alloc']:.2f}")
+            print(f"  TOTAL Value    : {tot['total_value']:.2f}")
+            print(f"  PnL Pool (non reinvestita): {tot['realized_pnl_pool']:.2f}\n")
+
+            for s, r in rows.items():
+                print(f"- {r['symbol']}:")
+                print(f"    Qty           : {r['quantity']}")
+                print(f"    Last Price    : {r['last_price']:.4f}")
+                print(f"    Holding Value : {r['holding_value']:.2f}")
+                print(f"    Cash Alloc    : {r['cash_alloc']:.2f}")
+                print(f"    Weight (exp)  : {r['weight_exposure']*100:.2f}%")
+                print(f"    Weight (tot)  : {r['weight_total']*100:.2f}%")
+                print(f"    Target Weight : {r['target_weight']*100:.2f}%")
+                diff = r['weight_diff']*100
+                sign = "+" if diff>=0 else "-"
+                print(f"    Diff vs Target: {sign}{abs(diff):.2f}%")
+            print()
 
         else:
             print("Unknown command. Try: start, status, buy [stock], close [stock], pnl, exit.")

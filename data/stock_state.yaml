@@ -1,4 +1,8 @@
 btc_usd:
   money_invested: 200.0
-  quantity: 0.0017352653876491124
-  realized_pnl: 0.0
+  quantity: 0.0019313887287553033
+  realized_pnl: 28.501679953178325
+eth_usd:
+  money_invested: 300.0
+  quantity: 0.08211698687045182
+  realized_pnl: -11.039549999906

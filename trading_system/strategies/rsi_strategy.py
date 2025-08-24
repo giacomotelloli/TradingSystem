@@ -196,14 +196,14 @@ class Strategy(StrategyBase):
             self.highest_price = max(self.highest_price, price)
 
             if not self.armed:
-                if price >= (self.min_profitable_price or float("inf") - 1.0):
+                if price >= self.min_profitable_price :
                     self.armed = True
 
             if self.armed:
                 trailing_floor = self.highest_price * (1.0 - self.trailing_pct)
-                protected_floor = max(trailing_floor, self.min_profitable_price or trailing_floor)
+                #protected_floor = max(trailing_floor, self.min_profitable_price or trailing_floor)
 
-                if price <= protected_floor and rsi > self.rsi_exit:
+                if price >= self.min_profitable_price :
                     qty = self.position_qty
                     self.position_qty = 0.0
                     self.entry_price = None
