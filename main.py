@@ -2,6 +2,9 @@ from pyfiglet import Figlet
 from trading_system.strategy_manager import StrategyManager
 from trading_system.state import PortfolioState
 from trading_system.utils.portfolio_manager import PortfolioManager  #  New import
+from trading_system.backtest.portfolio_backtest import PortfolioBacktester
+from datetime import datetime
+
 import os 
 
 def show_help():
@@ -101,6 +104,51 @@ def main():
 
         elif cmd == "pnl":
             print(" Strategy PnL:", state.get_pnl())
+
+        elif cmd == "backtest":
+            # chiedi parametri
+            start = input("Start date (es. 2024-01-01T00:00:00Z o 2024-01-01): ").strip()
+            end   = input("End date   (es. 2024-03-01T00:00:00Z o 2024-03-01): ").strip()
+            tf_s  = input("Timeframe minutes (es. 1 / 5 / 15 / 60): ").strip()
+
+            # normalizza ISO (se mettono solo data)
+            def _to_iso(x: str) -> str:
+                if "T" in x or " " in x:
+                    return x
+                return x + "T00:00:00Z"
+
+            start_iso = _to_iso(start)
+            end_iso   = _to_iso(end)
+            try:
+                timeframe_minutes = int(tf_s)
+            except Exception:
+                print("Timeframe non valido, uso 1 minuto.")
+                timeframe_minutes = 1
+
+            # carica mappa strategie e allocazioni dal PortfolioManager (già lo usi per live)
+            portfolio = PortfolioManager()
+            portfolio.bootstrap()  # per avere allocations e initial_budget coerenti
+
+            # StrategyManager legge config/strategies.yaml per le strategie
+            manager = StrategyManager(PortfolioState())  # state temporaneo solo per caricare mapping
+            strategies_map = manager.stock_to_strategy   # es. {'btc_usd': 'rsi_strategy', ...}
+
+            # Backtester vuole i simboli esattamente come nel file YAML (chiave)
+            # e le allocation dal portfolio manager
+            backtester = PortfolioBacktester(
+                strategies_map=strategies_map,
+                allocations=portfolio.allocations,
+                initial_budget=portfolio.initial_budget,
+                timeframe_minutes=timeframe_minutes,
+                start_iso=start_iso,
+                end_iso=end_iso,
+                api_key=os.getenv("PAPER_API_KEY_ID") or os.getenv("APCA_API_KEY_ID"),
+                api_secret=os.getenv("PAPER_API_SECRET_KEY") or os.getenv("APCA_API_SECRET_KEY"),
+            )
+
+            print("\n[Backtest] Starting ...")
+            backtester.run()
+            print("[Backtest] Completed.\n")
 
         elif cmd.startswith("close "):
             stock = cmd.split(" ", 1)[1].strip()
